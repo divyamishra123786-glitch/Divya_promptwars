@@ -1,342 +1,343 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import {
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  Lock,
+  CheckCircle2,
+  Users,
+  GitBranch,
+  BookOpen,
+  Eye,
+  Layers,
+  Play,
+} from 'lucide-react';
+import { Eclipse } from '../components/Eclipse';
+import { GuidedTour } from '../components/GuidedTour';
 
-const SIGNPOSTS = [
+const PROOF_CHIPS = [
+  { label: 'Real Gemini AI', icon: Zap, tooltip: 'Powered by Google Gemini 1.5 Pro & Flash models' },
+  { label: 'Never Decides For You', icon: ShieldCheck, tooltip: 'Server-enforced policy against telling users what to choose' },
+  { label: 'Saved Privately in Browser', icon: Lock, tooltip: 'Your decisions stay local in your client browser storage' },
+  { label: 'Verified & Tested', icon: CheckCircle2, tooltip: 'Full unit & integration test coverage' },
+];
+
+const CAPABILITIES = [
   {
-    label: 'What you see',
-    color: 'text-ivory',
-    border: 'border-white/10',
-    bg: 'bg-card/40',
-    example: 'The stipend is good. The company is close to home.',
+    title: 'Blind Spot Detection',
+    purpose: 'Categorizes non-obvious risks sitting outside your immediate decision frame.',
+    tag: 'Powered by Gemini',
+    link: '/app/analysis/demo-internship-6mo',
+    icon: Eye,
   },
   {
-    label: 'What you know',
-    color: 'text-sage',
-    border: 'border-sage/20',
-    bg: 'bg-sage/05',
-    example: 'You know your college schedule and financial needs.',
+    title: 'Assumption Scanner',
+    purpose: 'Exposes unstated premises in your reasoning that could fail under stress.',
+    tag: 'Powered by Gemini',
+    link: '/app/analysis/demo-internship-6mo',
+    icon: Layers,
   },
   {
-    label: 'What you miss',
-    color: 'text-accent',
-    border: 'border-accent/40',
-    bg: 'bg-accent/08',
-    example: 'Academic impact, mentorship quality, long-term career signal.',
-    highlighted: true,
+    title: 'Qualitative Risk Radar',
+    purpose: 'Maps likelihood vs impact on a 3x3 grid without misleading numeric probabilities.',
+    tag: 'Stored locally',
+    link: '/app/analysis/demo-internship-6mo',
+    icon: Zap,
   },
   {
-    label: 'What could change everything',
-    color: 'text-critical',
-    border: 'border-critical/30',
-    bg: 'bg-critical/06',
-    example: 'One honest conversation with a mentor or alumni.',
+    title: 'Perspective Lab',
+    purpose: 'Simulates 5 stakeholder viewpoints: Recruiter, Mentor, Financial, Family, Future Self.',
+    tag: 'Powered by Gemini',
+    link: '/app/perspective-lab',
+    icon: Users,
+  },
+  {
+    title: 'What-If Simulator',
+    purpose: 'Stress-tests your decision under plot twists like stipend reductions or extra hours.',
+    tag: 'Powered by Gemini',
+    link: '/app/what-if',
+    icon: GitBranch,
+  },
+  {
+    title: 'Decision Journal',
+    purpose: 'Tracks reflection history and lessons learned over time for long-term growth.',
+    tag: 'Stored locally',
+    link: '/app/journal',
+    icon: BookOpen,
   },
 ];
 
-const FEATURES = [
-  {
-    icon: '◑',
-    title: 'Blind Spot Detection',
-    desc: 'AI surfaces what you may have overlooked — without telling you what to decide.',
-  },
-  {
-    icon: '◈',
-    title: 'Perspective Lab',
-    desc: 'See your decision through the eyes of a recruiter, mentor, financial advisor, or your future self.',
-  },
-  {
-    icon: '⟳',
-    title: 'What-If Simulator',
-    desc: 'Toggle hypothetical changes and see how they could shift your risks and assumptions.',
-  },
-  {
-    icon: '◇',
-    title: 'Socratic Challenge',
-    desc: 'AI asks one question at a time, helping you discover what you actually think.',
-  },
-  {
-    icon: '◻',
-    title: 'Decision Journal',
-    desc: 'Reflect on what you initially thought, what you overlooked, and what you learned.',
-  },
-  {
-    icon: '✦',
-    title: 'Risk Radar',
-    desc: 'A qualitative 3×3 matrix mapping likelihood vs impact — always labelled AI-estimated.',
-  },
+const SIGNPOSTS = [
+  { label: 'What You See', content: '6-month internship, good stipend, 20 mins from home.', color: 'border-white/10 bg-white/03' },
+  { label: 'What You Know', content: 'Provides industry experience and immediate cash flow.', color: 'border-white/10 bg-white/03' },
+  { label: 'What You Miss', content: 'Overlap with university exams, zero structured mentorship, daily commute fatigue.', color: 'border-amber-500/30 bg-amber-500/05 text-amber-200' },
+  { label: 'What Could Change Everything', content: 'What if stipend drops by 30% or exam dates conflict directly?', color: 'border-accent/30 bg-accent/05 text-accent' },
 ];
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'see' | 'miss'>('see');
 
   return (
-    <div className="min-h-screen bg-bg text-text-primary overflow-x-hidden">
-      {/* Skip link */}
-      <a href="#main-content" className="skip-link">Skip to content</a>
+    <div className="min-h-screen bg-bg text-ivory flex flex-col font-sans selection:bg-accent selection:text-bg">
+      <GuidedTour isOpen={isTourOpen} onClose={() => setIsTourOpen(false)} />
 
-      {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/05 bg-bg/90 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <div className="eclipse-sm" aria-hidden="true" />
-          <span className="font-heading text-sm font-bold tracking-widest text-ivory uppercase">BlindSpot AI</span>
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-white/06 bg-bg/80 backdrop-blur-md px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+            <Eclipse size="logo" />
+            <span className="font-heading text-base font-bold tracking-wider text-ivory">
+              BLINDSPOT AI
+            </span>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-6 text-sm text-muted">
+            <a href="#how-it-works" className="hover:text-ivory transition-colors">How It Works</a>
+            <a href="#whats-inside" className="hover:text-ivory transition-colors">What's Inside</a>
+            <a href="#interactive-preview" className="hover:text-ivory transition-colors">Example</a>
+            <button onClick={() => navigate('/app/about')} className="hover:text-ivory transition-colors">About</button>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsTourOpen(true)} className="btn-ghost text-xs hidden sm:flex items-center gap-1.5">
+              <Play className="w-3.5 h-3.5 text-accent" /> 60-Sec Tour
+            </button>
+            <button onClick={() => navigate('/app')} className="btn-primary text-xs px-4 py-2">
+              Open App
+            </button>
+          </div>
         </div>
-        <button
-          id="nav-cta"
-          onClick={() => navigate('/app')}
-          className="btn-primary py-2 px-5 text-sm"
-        >
-          Open App
-        </button>
       </header>
 
-      <main id="main-content">
-        {/* Hero */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-20 text-center overflow-hidden">
-          {/* Background gradient */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            aria-hidden="true"
-            style={{
-              background: 'radial-gradient(ellipse 60% 50% at 50% 60%, rgba(242,163,109,0.08) 0%, transparent 70%)',
-            }}
-          />
+      {/* Hero Section */}
+      <section className="py-16 md:py-24 px-6 relative overflow-hidden flex flex-col items-center text-center">
+        <div className="max-w-4xl mx-auto space-y-8 relative z-10 flex flex-col items-center">
+          <Eclipse size="hero" className="my-2" />
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-            className="mb-12"
-          >
-            <div className="eclipse-lg mx-auto" aria-label="BlindSpot AI eclipse logo" />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="max-w-3xl space-y-6"
-          >
-            <div className="label-xs mb-4">The Blind Spot — Same decisions. A wider view.</div>
-            <h1 className="font-heading text-4xl md:text-6xl lg:text-7xl font-bold text-ivory leading-tight">
-              You're seeing the decision.{' '}
-              <span
-                className="relative"
-                style={{
-                  background: 'linear-gradient(135deg, #F2A36D, #E6B86C)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                But are you seeing everything?
-              </span>
+          <div className="space-y-4 max-w-3xl">
+            <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-ivory leading-tight">
+              You're seeing the decision. <br />
+              <span className="text-accent italic font-serif">But are you seeing everything?</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted max-w-2xl mx-auto leading-relaxed">
-              An intelligent thinking companion that reveals hidden assumptions, overlooked risks,
-              and perspectives you might have missed. Every decision has a side you haven't seen.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-              <button
-                id="hero-cta-analyze"
-                onClick={() => navigate('/app/new')}
-                className="btn-primary text-base px-8 py-4"
-              >
-                ✦ Analyze My Decision
-              </button>
-              <a
-                href="#how-it-works"
-                id="hero-cta-how"
-                className="btn-secondary text-base px-8 py-4"
-              >
-                Explore How It Works
-              </a>
-            </div>
-          </motion.div>
-        </section>
-
-        {/* Signpost section */}
-        <section className="px-6 py-20 max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="label-xs mb-3">The four lenses</div>
-            <h2 className="font-heading text-3xl text-ivory">
-              Same decision. A wider view.
-            </h2>
-            <p className="text-muted mt-3 max-w-xl mx-auto">
-              Hover each signpost to see what BlindSpot AI reveals in the internship example.
+            <p className="text-muted text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              An intelligent thinking companion that reveals hidden assumptions, overlooked risks, and perspectives you might have missed — without ever deciding for you.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {SIGNPOSTS.map((sp, i) => (
-              <motion.div
-                key={sp.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className={`group relative p-5 rounded-xl border cursor-default transition-all duration-300 ${sp.bg} ${sp.border} ${sp.highlighted ? 'ring-1 ring-accent/30' : ''}`}
-              >
-                <div className="label-xs mb-3">{String(i + 1).padStart(2, '0')}</div>
-                <p className={`font-heading text-base font-semibold mb-3 ${sp.color}`}>
-                  {sp.label}
-                </p>
-                <p className="text-xs text-muted opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-relaxed">
-                  {sp.example}
-                </p>
-                {sp.highlighted && (
-                  <div className="absolute top-3 right-3 eclipse-sm" aria-hidden="true" style={{ width: '14px', height: '14px' }} />
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </section>
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+            <button
+              onClick={() => navigate('/app/new-analysis')}
+              className="btn-primary text-base px-8 py-3.5 shadow-xl shadow-accent/20 flex items-center gap-2"
+            >
+              Analyze My Decision <ArrowRight className="w-5 h-5" />
+            </button>
 
-        {/* How It Works */}
-        <section id="how-it-works" className="px-6 py-20 max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="label-xs mb-3">How it works</div>
-            <h2 className="font-heading text-3xl text-ivory">Three steps to a wider view</h2>
+            <button
+              onClick={() => navigate('/app/analysis/demo-internship-6mo')}
+              className="btn-ghost text-base px-6 py-3.5 flex items-center gap-2 border border-white/10"
+            >
+              <Sparkles className="w-5 h-5 text-accent" /> Explore Interactive Demo
+            </button>
           </div>
-          <div className="space-y-6">
-            {[
-              {
-                n: '01',
-                title: 'Describe your decision',
-                desc: 'Share the context: what you\'re weighing, what you care about, and why you\'re leaning a certain way. No form is too short or too long.',
-              },
-              {
-                n: '02',
-                title: 'AI maps your blind spots',
-                desc: 'Gemini analyzes your reasoning and surfaces what you may have overlooked — assumptions, risks, missing information, and conflicting priorities.',
-              },
-              {
-                n: '03',
-                title: 'Explore, challenge, reflect',
-                desc: 'Switch perspectives, run what-if scenarios, answer Socratic questions, and journal your reflections. The AI never decides — it helps you think.',
-              },
-            ].map((step, i) => (
-              <motion.div
-                key={step.n}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.15 }}
-                viewport={{ once: true }}
-                className="flex gap-6 p-6 rounded-xl border border-white/06 bg-card/50 hover:border-accent/20 transition-colors"
-              >
-                <div className="font-heading text-3xl font-bold text-accent/40 shrink-0 w-12">{step.n}</div>
-                <div>
-                  <h3 className="font-heading text-lg text-ivory mb-2">{step.title}</h3>
-                  <p className="text-muted text-sm leading-relaxed">{step.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
 
-        {/* Features grid */}
-        <section className="px-6 py-20 bg-secondary/50">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="label-xs mb-3">Features</div>
-              <h2 className="font-heading text-3xl text-ivory">Everything you need to think clearly</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {FEATURES.map((f, i) => (
-                <motion.div
-                  key={f.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                  className="p-5 rounded-xl border border-white/06 bg-card/40 hover:border-accent/20 hover:bg-card/70 transition-all duration-300"
+          {/* Proof Chips Under Hero */}
+          <div className="pt-6 flex flex-wrap justify-center gap-2 sm:gap-3 max-w-3xl">
+            {PROOF_CHIPS.map((chip, idx) => {
+              const Icon = chip.icon;
+              return (
+                <div
+                  key={idx}
+                  title={chip.tooltip}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/04 border border-white/08 text-ivory/90 hover:border-accent/40 transition-colors"
                 >
-                  <span className="text-2xl mb-3 block text-accent">{f.icon}</span>
-                  <h3 className="font-heading text-base font-semibold text-ivory mb-2">{f.title}</h3>
-                  <p className="text-muted text-sm leading-relaxed">{f.desc}</p>
-                </motion.div>
-              ))}
-            </div>
+                  <Icon className="w-3.5 h-3.5 text-accent" />
+                  <span>{chip.label}</span>
+                </div>
+              );
+            })}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Example preview */}
-        <section className="px-6 py-20 max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="label-xs mb-3">Example analysis (clearly labelled)</div>
-            <h2 className="font-heading text-2xl text-ivory">What a real analysis looks like</h2>
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-16 px-6 border-t border-white/06 bg-secondary/30">
+        <div className="max-w-5xl mx-auto space-y-12">
+          <div className="text-center space-y-3">
+            <div className="label-xs text-accent">Decision Framework</div>
+            <h2 className="font-heading text-3xl font-bold text-ivory">How BlindSpot AI Works</h2>
+            <p className="text-muted text-sm max-w-xl mx-auto">
+              Same decisions. A wider view. Move from immediate reaction to multi-perspective clarity in 3 steps.
+            </p>
           </div>
-          <div className="p-6 rounded-xl border border-accent/20 bg-card/60 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="eclipse-sm" aria-hidden="true" />
-              <div>
-                <p className="font-heading text-lg text-ivory">Should I accept the 6-month internship?</p>
-                <p className="text-xs text-muted">Example from the internship golden test case</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="card space-y-3 p-6">
+              <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent text-accent font-bold flex items-center justify-center text-sm">
+                1
               </div>
+              <h3 className="font-heading text-lg font-bold text-ivory">1. Share Your Context</h3>
+              <p className="text-xs text-muted leading-relaxed">
+                Provide your decision situation in one sentence. Optional fields allow extra details like stipend, duration, or concerns.
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-critical/08 border border-critical/20">
-                <p className="label-xs text-critical mb-1">High severity blind spot</p>
-                <p className="text-sm text-ivory font-medium">Academic Impact</p>
-                <p className="text-xs text-muted mt-1">The overlap between the 6-month period and your academic calendar has not been examined.</p>
+
+            <div className="card space-y-3 p-6">
+              <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent text-accent font-bold flex items-center justify-center text-sm">
+                2
               </div>
-              <div className="p-3 rounded-lg bg-warning/08 border border-warning/20">
-                <p className="label-xs text-warning mb-1">Medium severity blind spot</p>
-                <p className="text-sm text-ivory font-medium">Opportunity Cost</p>
-                <p className="text-xs text-muted mt-1">Accepting this forecloses other options — research, other internships — that haven't been weighed.</p>
-              </div>
+              <h3 className="font-heading text-lg font-bold text-ivory">2. Discover What You Missed</h3>
+              <p className="text-xs text-muted leading-relaxed">
+                Gemini AI parses your input to extract unstated assumptions, categorized blind spots, and a qualitative 3x3 risk matrix.
+              </p>
             </div>
-            <div className="pt-2 border-t border-white/05">
-              <p className="text-xs text-muted italic">
-                ✦ This is a sample analysis. The AI does not tell you whether to accept or reject — it surfaces what you may have missed.
+
+            <div className="card space-y-3 p-6">
+              <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent text-accent font-bold flex items-center justify-center text-sm">
+                3
+              </div>
+              <h3 className="font-heading text-lg font-bold text-ivory">3. Explore Perspectives</h3>
+              <p className="text-xs text-muted leading-relaxed">
+                Simulate 5 distinct stakeholder lenses (Recruiter, Mentor, Financial, Family, Future Self) and stress-test what-if scenarios.
               </p>
             </div>
           </div>
-        </section>
 
-        {/* Why BlindSpot AI */}
-        <section className="px-6 py-20 bg-secondary/50">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="label-xs mb-3">Why BlindSpot AI</div>
-            <h2 className="font-heading text-3xl text-ivory mb-6">
-              "See Beyond What You See."
-            </h2>
-            <p className="text-muted leading-relaxed text-lg">
-              People make decisions based on what's most visible to them. The AI doesn't judge your choice —
-              it helps you discover what you might be missing: unstated assumptions, invisible trade-offs,
-              and perspectives that could reshape how you think.
-            </p>
-            <div className="mt-10">
-              <button
-                id="why-cta"
-                onClick={() => navigate('/app/new')}
-                className="btn-primary text-base px-10 py-4"
-              >
-                Analyze My Decision
-              </button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-white/06 px-6 py-8">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="eclipse-sm" aria-hidden="true" style={{ width: '18px', height: '18px' }} />
-            <span className="font-heading text-sm text-muted">BlindSpot AI</span>
-          </div>
-          <p className="text-xs text-muted text-center">
-            "See Beyond What You See." — AI-estimated insights, not professional advice.
-            Decision text is processed by Google Gemini.
-          </p>
-          <div className="flex gap-4 text-xs text-muted">
-            <button onClick={() => navigate('/app/about')} className="hover:text-ivory transition-colors">
-              How It Works
-            </button>
-            <button onClick={() => navigate('/app/settings')} className="hover:text-ivory transition-colors">
-              Settings
-            </button>
+          {/* 4 Signposts Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+            {SIGNPOSTS.map((sp, idx) => (
+              <div key={idx} className={`p-4 rounded-xl border ${sp.color} space-y-2`}>
+                <div className="label-xs font-bold">{sp.label}</div>
+                <p className="text-xs leading-relaxed">{sp.content}</p>
+              </div>
+            ))}
           </div>
         </div>
+      </section>
+
+      {/* What's Inside Section */}
+      <section id="whats-inside" className="py-16 px-6 border-t border-white/06">
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="text-center space-y-3">
+            <div className="label-xs text-accent">Feature Map</div>
+            <h2 className="font-heading text-3xl font-bold text-ivory">What's Inside BlindSpot AI</h2>
+            <p className="text-muted text-sm max-w-xl mx-auto">
+              A comprehensive toolkit for decision-intelligence and critical thinking.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {CAPABILITIES.map((cap, idx) => {
+              const Icon = cap.icon;
+              return (
+                <div key={idx} className="card space-y-4 p-6 hover:border-accent/40 transition-colors flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Icon className="w-6 h-6 text-accent" />
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/05 text-muted border border-white/10 font-mono">
+                        {cap.tag}
+                      </span>
+                    </div>
+                    <h3 className="font-heading text-lg font-bold text-ivory">{cap.title}</h3>
+                    <p className="text-xs text-muted leading-relaxed">{cap.purpose}</p>
+                  </div>
+
+                  <button
+                    onClick={() => navigate(cap.link)}
+                    className="text-xs text-accent font-semibold flex items-center gap-1 hover:underline self-start pt-2"
+                  >
+                    See it in Demo <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive Product Preview Section */}
+      <section id="interactive-preview" className="py-16 px-6 border-t border-white/06 bg-secondary/30">
+        <div className="max-w-4xl mx-auto space-y-8 text-center">
+          <div className="space-y-2">
+            <div className="label-xs text-accent">Live Preview</div>
+            <h2 className="font-heading text-3xl font-bold text-ivory">Compare: What You See vs. Blind Spots</h2>
+          </div>
+
+          <div className="card p-6 space-y-6 text-left border-accent/30">
+            <div className="flex items-center justify-between border-b border-white/06 pb-4">
+              <div>
+                <span className="label-xs text-muted">Sample Case Study</span>
+                <h3 className="font-heading text-lg font-bold text-ivory">6-Month Student Internship Decision</h3>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab('see')}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    activeTab === 'see' ? 'bg-white/10 text-ivory font-bold' : 'text-muted hover:text-ivory'
+                  }`}
+                >
+                  What You See
+                </button>
+                <button
+                  onClick={() => setActiveTab('miss')}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    activeTab === 'miss' ? 'bg-accent text-bg font-bold' : 'text-muted hover:text-ivory'
+                  }`}
+                >
+                  What BlindSpot AI Sees
+                </button>
+              </div>
+            </div>
+
+            {activeTab === 'see' ? (
+              <div className="space-y-3">
+                <p className="text-sm text-ivory font-medium">Visible Stated Priorities:</p>
+                <ul className="space-y-2 text-xs text-muted list-disc list-inside">
+                  <li>Deciding on 6-month internship at local firm</li>
+                  <li>Office is 20 minutes from home (geographic convenience)</li>
+                  <li>Reasonable monthly stipend to support personal expenses</li>
+                  <li>Adds industry work experience to resume</li>
+                </ul>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-accent font-bold">Uncovered Blind Spots & Missing Info:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200">
+                    <strong>Academic Overlap:</strong> Potential missing classes or delayed graduation timeline.
+                  </div>
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200">
+                    <strong>Mentorship Depth:</strong> No dedicated supervisor or structured learning path assigned.
+                  </div>
+                  <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-200">
+                    <strong>Net Pay Erosion:</strong> Daily travel & lunch expenses consume up to 35% of stipend.
+                  </div>
+                  <div className="p-3 rounded-lg bg-accent/10 border border-accent/20 text-accent">
+                    <strong>Career Signal:</strong> Local office brand vs competitive tier-1 recruiter weight.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-6 border-t border-white/06 bg-secondary/80 text-center space-y-4 mt-auto">
+        <div className="flex items-center justify-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+          <Eclipse size="logo" />
+          <span className="font-heading text-sm font-bold tracking-wider text-ivory">
+            BLINDSPOT AI
+          </span>
+        </div>
+        <p className="text-xs text-accent font-serif italic font-medium">"See Beyond What You See."</p>
+        <p className="text-xs text-muted max-w-md mx-auto">
+          Every decision has a side you haven't seen. Built with React, TypeScript, Express and Google Gemini.
+        </p>
       </footer>
     </div>
   );

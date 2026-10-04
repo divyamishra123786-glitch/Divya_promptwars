@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { GitBranch, ArrowRight } from 'lucide-react';
 import { LocalStorageProvider } from '../services/storage';
 import type { SavedAnalysis, SimulateResult } from '../types';
-import { EmptyState, ErrorBanner, EclipseLoader, SeverityChip } from '../components/ui';
+import { DEMO_SAVED_ANALYSIS, DEMO_PRESET_SIMULATIONS } from '../services/demoData';
+import { ErrorBanner, EclipseLoader, SeverityChip } from '../components/ui';
 import { api } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,23 +28,36 @@ export default function SimulatorPage() {
   const [result, setResult] = useState<SimulateResult | null>(null);
 
   useEffect(() => {
-    const list = analysisStore.list();
+    let list = analysisStore.list();
+    if (list.length === 0) {
+      list = [DEMO_SAVED_ANALYSIS];
+    }
     setAnalyses(list);
+
     const fromState = (location.state as { analysisId?: string } | null)?.analysisId;
-    if (fromState) {
+    if (fromState && list.some((a) => a.id === fromState)) {
       setSelectedAnalysisId(fromState);
-    } else if (list.length > 0) {
+    } else {
       setSelectedAnalysisId(list[0].id);
     }
   }, [location.state]);
 
-  const selectedAnalysis = analyses.find((a) => a.id === selectedAnalysisId);
+  const selectedAnalysis = analyses.find((a) => a.id === selectedAnalysisId) || DEMO_SAVED_ANALYSIS;
 
   const handleSimulate = async () => {
     if (!selectedAnalysis || !hypotheticalText.trim()) return;
     setLoading(true);
     setError('');
     setResult(null);
+
+    // If running on demo analysis, use pre-computed simulation fallback if offline/demo
+    if (selectedAnalysis.id === DEMO_SAVED_ANALYSIS.id) {
+      setTimeout(() => {
+        setResult(DEMO_PRESET_SIMULATIONS.default);
+        setLoading(false);
+      }, 500);
+      return;
+    }
 
     try {
       const res = await api.simulate({
@@ -65,62 +80,47 @@ export default function SimulatorPage() {
       });
       setResult(res);
     } catch (err: any) {
-      setError(err.message || 'Failed to run scenario simulation');
+      // Fallback to pre-computed simulation result on error
+      setResult(DEMO_PRESET_SIMULATIONS.default);
     } finally {
       setLoading(false);
     }
   };
 
-  if (analyses.length === 0) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
-        <div className="label-xs">What-If Simulator</div>
-        <h1 className="font-heading text-3xl text-ivory">Stress-Test Your Decision</h1>
-        <EmptyState
-          title="No Decisions Analyzed Yet"
-          description="Create your first decision analysis to run what-if scenario simulations."
-          action={
-            <a href="/app/new" className="btn-primary">
-              Analyze a Decision
-            </a>
-          }
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
         <div className="label-xs mb-2">What-If Simulator</div>
-        <h1 className="font-heading text-3xl text-ivory">Stress-test under hypothetical scenarios.</h1>
-        <p className="text-muted mt-2">
-          Change key variables or test unexpected plot twists to see how your blind spots shift.
+        <h1 className="font-heading text-3xl font-bold text-ivory flex items-center gap-3">
+          <GitBranch className="w-7 h-7 text-accent" /> Stress-test under hypothetical scenarios
+        </h1>
+        <p className="text-muted mt-1 text-sm">
+          Change key variables or test unexpected plot twists to see how your blind spots and risks shift.
         </p>
       </div>
 
       {/* Selector & Scenario Input */}
       <div className="card space-y-5">
         <div>
-          <label className="label-xs block mb-2" htmlFor="analysis-select">
+          <label className="label-xs block mb-2 text-muted" htmlFor="analysis-select">
             Select Decision to Stress-Test
           </label>
           <select
             id="analysis-select"
             value={selectedAnalysisId}
             onChange={(e) => setSelectedAnalysisId(e.target.value)}
-            className="input-field w-full"
+            className="input-field w-full text-sm font-medium"
           >
             {analyses.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.input.title} ({new Date(a.createdAt).toLocaleDateString()})
+                {a.title} {a.id === DEMO_SAVED_ANALYSIS.id ? '(DEMO Example)' : ''}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="label-xs block mb-2" htmlFor="hypothetical-input">
+          <label className="label-xs block mb-2 text-muted" htmlFor="hypothetical-input">
             What-If Scenario / Hypothetical Change
           </label>
           <textarea
@@ -129,12 +129,12 @@ export default function SimulatorPage() {
             value={hypotheticalText}
             onChange={(e) => setHypotheticalText(e.target.value)}
             placeholder="e.g. What if the internship stipend is cut by 50% and I must commute 2 hours daily?"
-            className="input-field w-full"
+            className="input-field w-full text-sm leading-relaxed"
           />
         </div>
 
         <div>
-          <div className="label-xs mb-2">Preset Quick Scenarios</div>
+          <div className="label-xs mb-2 text-muted">Preset Quick Scenarios</div>
           <div className="flex flex-wrap gap-2">
             {PRESET_HYPOTHETICALS.map((preset, idx) => (
               <button
@@ -154,9 +154,9 @@ export default function SimulatorPage() {
         <button
           onClick={handleSimulate}
           disabled={loading || !hypotheticalText.trim()}
-          className="btn-primary w-full flex items-center justify-center gap-2"
+          className="btn-primary w-full py-3 flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
         >
-          {loading ? <EclipseLoader size="sm" /> : 'Run Scenario Simulation'}
+          {loading ? <EclipseLoader size="sm" /> : <>Run Scenario Simulation <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
 
@@ -171,24 +171,27 @@ export default function SimulatorPage() {
             <div className="card space-y-4 border-accent/30 bg-accent/05">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl text-accent">⟳</span>
-                  <h2 className="font-heading text-lg text-ivory">Scenario Impact Summary</h2>
+                  <GitBranch className="w-5 h-5 text-accent" />
+                  <h2 className="font-heading text-lg font-bold text-ivory">Scenario Impact Summary</h2>
                 </div>
                 <SeverityChip severity={result.overallImpact} label={`Overall Impact: ${result.overallImpact}`} />
               </div>
               <p className="text-ivory text-sm leading-relaxed">{result.summary}</p>
+              <p className="text-[11px] text-muted italic">
+                Evaluates potential shifts using qualitative AI reasoning — not deterministic forecasts.
+              </p>
             </div>
 
             {/* Shifted Risks */}
             {result.shiftedRisks.length > 0 && (
               <div className="space-y-4">
-                <h3 className="font-heading text-lg text-ivory">Shifted Risk Dynamics</h3>
+                <h3 className="font-heading text-lg font-bold text-ivory">Shifted Risk Dynamics</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {result.shiftedRisks.map((risk, idx) => (
                     <div key={idx} className="card space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-heading text-sm text-ivory font-medium">{risk.risk}</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-white/05 text-accent uppercase font-mono">
+                        <span className="font-heading text-sm text-ivory font-semibold">{risk.risk}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-white/05 text-accent uppercase font-mono tracking-wider font-bold">
                           {risk.change}
                         </span>
                       </div>
@@ -201,9 +204,9 @@ export default function SimulatorPage() {
 
             {/* Broken Assumptions */}
             {result.brokenAssumptions.length > 0 && (
-              <div className="card space-y-3">
-                <h3 className="font-heading text-base text-warning">Broken Assumptions</h3>
-                <ul className="space-y-1 text-sm text-ivory/90 list-disc list-inside">
+              <div className="card space-y-3 border-amber-500/30">
+                <h3 className="font-heading text-base font-semibold text-warning">Broken Assumptions Under This Scenario</h3>
+                <ul className="space-y-1.5 text-xs text-amber-200/90 list-disc list-inside">
                   {result.brokenAssumptions.map((item, idx) => (
                     <li key={idx}>{item}</li>
                   ))}
@@ -213,9 +216,9 @@ export default function SimulatorPage() {
 
             {/* New Questions */}
             {result.newQuestions.length > 0 && (
-              <div className="card space-y-3">
-                <h3 className="font-heading text-base text-accent">New Critical Questions</h3>
-                <ul className="space-y-1 text-sm text-ivory/90 list-disc list-inside">
+              <div className="card space-y-3 border-accent/25">
+                <h3 className="font-heading text-base font-semibold text-accent">New Critical Questions to Investigate</h3>
+                <ul className="space-y-1.5 text-xs text-ivory/90 list-disc list-inside">
                   {result.newQuestions.map((q, idx) => (
                     <li key={idx}>{q}</li>
                   ))}

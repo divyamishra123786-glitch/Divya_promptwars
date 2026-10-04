@@ -1,208 +1,209 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  PlusCircle,
+  Users,
+  GitBranch,
+  ShieldAlert,
+  BookOpen,
+  FolderKanban,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+} from 'lucide-react';
 import { LocalStorageProvider } from '../services/storage';
-import type { SavedAnalysis, JournalEntry } from '../types';
-import { EmptyState, DemoModeBanner } from '../components/ui';
+import type { SavedAnalysis } from '../types';
 import { api } from '../services/api';
 
 const analysisStore = new LocalStorageProvider<SavedAnalysis>('analyses');
-const journalStore = new LocalStorageProvider<JournalEntry>('journal');
-
-const DAILY_QUESTIONS = [
-  'What is one assumption you are making about this decision that you haven\'t questioned?',
-  'Who is most affected by this decision that you haven\'t consulted?',
-  'What would you regret more: acting on this, or not acting?',
-  'What information would change your mind entirely?',
-  'In 5 years, what will this decision have taught you?',
-  'What are you optimising for — and is that actually what matters most?',
-  'What does the version of you with no fear choose?',
-  'What constraints do you think are fixed that might actually be flexible?',
-];
 
 export default function OverviewPage() {
   const navigate = useNavigate();
   const [analyses, setAnalyses] = useState<SavedAnalysis[]>([]);
-  const [journalCount, setJournalCount] = useState(0);
   const [mode, setMode] = useState<'live' | 'demo'>('demo');
-  const [dailyQuestion, setDailyQuestion] = useState('');
+  const [quickInput, setQuickInput] = useState('');
 
   useEffect(() => {
     setAnalyses(analysisStore.list());
-    setJournalCount(journalStore.list().length);
-    api.health().then((h) => setMode(h.mode as 'live' | 'demo')).catch(() => {});
-
-    // Rotate daily question based on date
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    setDailyQuestion(DAILY_QUESTIONS[dayOfYear % DAILY_QUESTIONS.length]);
+    api.health().then((h) => setMode(h.mode as 'live' | 'demo')).catch(() => setMode('demo'));
   }, []);
 
-  const recentAnalyses = analyses.slice(0, 5);
-  const highSeverityCount = analyses.reduce((n, a) => n + (a.result.blindSpots.filter(b => b.severity === 'High').length), 0);
-  const avgBlindSpots = analyses.length ? (analyses.reduce((n, a) => n + a.result.blindSpots.length, 0) / analyses.length).toFixed(1) : '—';
+  const handleQuickSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickInput.trim()) return;
+    navigate('/app/new-analysis', { state: { initialInput: quickInput.trim() } });
+  };
+
+  const handleOpenDemo = () => {
+    navigate('/app/analysis/demo-internship-6mo', { state: { demo: true } });
+  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="label-xs mb-2">Overview</div>
-          <h1 className="font-heading text-3xl text-ivory">Think beyond what you see.</h1>
-          <p className="text-muted mt-2">
-            {analyses.length === 0
-              ? 'Start your first analysis to see insights here.'
-              : `You have analyzed ${analyses.length} decision${analyses.length !== 1 ? 's' : ''}.`}
+      <div>
+        <div className="label-xs mb-2">Dashboard Overview</div>
+        <h1 className="font-heading text-3xl font-bold text-ivory">Think beyond what you see.</h1>
+        <p className="text-muted mt-1 text-sm">
+          Better questions. Broader perspectives. Smarter decisions.
+        </p>
+      </div>
+
+      {/* Single Demo Status Badge */}
+      {mode === 'demo' && (
+        <div className="px-4 py-3 rounded-xl border border-amber-500/25 bg-amber-500/08 flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+          <p className="text-xs text-amber-200/90 leading-relaxed">
+            <strong>Demo mode:</strong> No Gemini API key found. Analyses use clearly labelled sample output. Add{' '}
+            <code className="bg-black/30 px-1.5 py-0.5 rounded text-amber-300">GEMINI_API_KEY</code> in Settings for live AI.
           </p>
         </div>
-        <button
-          id="overview-new-analysis"
-          onClick={() => navigate('/app/new')}
-          className="btn-primary"
-        >
-          ✦ New Analysis
-        </button>
-      </div>
+      )}
 
-      {mode === 'demo' && <DemoModeBanner />}
-
-      {/* Quick analysis box */}
-      <div className="p-5 rounded-xl border border-accent/20 bg-accent/05">
-        <p className="font-heading text-sm text-accent mb-3">Quick analysis</p>
-        <p className="text-sm text-muted mb-4">Have a decision in mind? Start analyzing right now.</p>
-        <button
-          id="overview-quick-analyze"
-          onClick={() => navigate('/app/new')}
-          className="btn-primary text-sm py-2.5"
-        >
-          Analyze My Decision →
-        </button>
-      </div>
-
-      {/* Daily Critical Question */}
-      <div className="p-5 rounded-xl border border-sage/20 bg-sage/05">
-        <div className="label-xs text-sage mb-2">Daily Critical Question</div>
-        <p className="text-ivory text-base leading-relaxed italic">"{dailyQuestion}"</p>
-      </div>
-
-      {/* Stats — only real data */}
-      {analyses.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Analyses', value: analyses.length.toString() },
-            { label: 'Avg Blind Spots', value: avgBlindSpots },
-            { label: 'High Severity', value: highSeverityCount.toString() },
-            { label: 'Journal Entries', value: journalCount.toString() },
-          ].map((stat) => (
-            <div key={stat.label} className="p-4 rounded-xl border border-white/06 bg-card/50 text-center">
-              <p className="font-heading text-2xl font-bold text-accent">{stat.value}</p>
-              <p className="label-xs mt-1">{stat.label}</p>
+      {/* Featured Card — See BlindSpot AI in Action */}
+      <div className="card border-accent/30 bg-accent/05 p-6 relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2 max-w-xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-accent/20 text-accent border border-accent/30">
+              <Sparkles className="w-3.5 h-3.5" /> 60-Second Interactive Demo
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Decision Activity Timeline */}
-      {analyses.length > 0 && (
-        <section aria-label="Decision activity timeline">
-          <div className="label-xs mb-4">Decision Activity Timeline</div>
-          <div className="space-y-2">
-            {analyses.slice(0, 10).map((a) => {
-              const date = new Date(a.createdAt);
-              const highCount = a.result.blindSpots.filter(b => b.severity === 'High').length;
-              return (
-                <div
-                  key={a.id}
-                  className="flex items-center gap-4 p-3 rounded-lg border border-white/05 bg-card/30 hover:bg-card/50 transition-colors"
-                >
-                  <div className="w-16 shrink-0 text-center">
-                    <p className="text-xs text-accent font-medium">{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ivory truncate">{a.title}</p>
-                    <p className="text-xs text-muted">{a.result.blindSpots.length} blind spots • {highCount} high severity</p>
-                  </div>
-                  <button
-                    onClick={() => navigate(`/app/analysis/${a.id}`)}
-                    className="btn-ghost text-xs shrink-0"
-                  >
-                    View →
-                  </button>
-                </div>
-              );
-            })}
+            <h2 className="font-heading text-2xl text-ivory font-bold">
+              See BlindSpot AI in Action
+            </h2>
+            <p className="text-sm text-ivory/80 leading-relaxed">
+              <strong>"Should I accept a 6-month internship offer?"</strong> Explore how AI illuminates academic impact, hidden travel expenses, mentorship quality, and long-term career positioning without ever deciding for you.
+            </p>
           </div>
-        </section>
-      )}
 
-      {/* Recent decisions */}
-      {recentAnalyses.length > 0 ? (
-        <section aria-label="Recent decisions">
-          <div className="flex items-center justify-between mb-4">
-            <div className="label-xs">Recent Decisions</div>
-            <button onClick={() => navigate('/app/decisions')} className="btn-ghost text-xs">
-              View all →
+          <button
+            onClick={handleOpenDemo}
+            className="btn-primary flex items-center justify-center gap-2 px-6 py-3 shrink-0 shadow-lg shadow-accent/20"
+          >
+            Explore Interactive Demo <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Analysis Real Textarea */}
+      <div className="card space-y-4">
+        <h3 className="font-heading text-lg font-semibold text-ivory flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-accent" /> Quick Analysis
+        </h3>
+        <form onSubmit={handleQuickSubmit} className="space-y-3">
+          <textarea
+            rows={3}
+            value={quickInput}
+            onChange={(e) => setQuickInput(e.target.value)}
+            placeholder="What decision is on your mind? (e.g. Deciding whether to accept a 6-month internship offer...)"
+            className="input-field w-full text-sm leading-relaxed"
+          />
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={!quickInput.trim()}
+              className="btn-primary flex items-center gap-2 text-sm px-5 py-2.5"
+            >
+              Reveal My Blind Spots <ArrowRight className="w-4 h-4" />
             </button>
           </div>
+        </form>
+      </div>
+
+      {/* Shortcut Tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <button
+          onClick={() => navigate('/app/new-analysis')}
+          className="card hover:border-accent/40 p-4 text-left space-y-2 group transition-all"
+        >
+          <PlusCircle className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+          <div className="font-heading text-sm font-semibold text-ivory">New Analysis</div>
+          <div className="text-xs text-muted">Scan a decision for hidden blind spots</div>
+        </button>
+
+        <button
+          onClick={() => navigate('/app/perspective-lab')}
+          className="card hover:border-accent/40 p-4 text-left space-y-2 group transition-all"
+        >
+          <Users className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+          <div className="font-heading text-sm font-semibold text-ivory">Perspective Lab</div>
+          <div className="text-xs text-muted">Simulate 5 stakeholder viewpoints</div>
+        </button>
+
+        <button
+          onClick={() => navigate('/app/what-if')}
+          className="card hover:border-accent/40 p-4 text-left space-y-2 group transition-all"
+        >
+          <GitBranch className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+          <div className="font-heading text-sm font-semibold text-ivory">What-If Simulator</div>
+          <div className="text-xs text-muted">Stress-test under changing conditions</div>
+        </button>
+
+        <button
+          onClick={() => navigate('/app/challenge')}
+          className="card hover:border-accent/40 p-4 text-left space-y-2 group transition-all"
+        >
+          <ShieldAlert className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+          <div className="font-heading text-sm font-semibold text-ivory">Challenge Thinking</div>
+          <div className="text-xs text-muted">Socratic sparring for your logic</div>
+        </button>
+
+        <button
+          onClick={() => navigate('/app/journal')}
+          className="card hover:border-accent/40 p-4 text-left space-y-2 group transition-all"
+        >
+          <BookOpen className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+          <div className="font-heading text-sm font-semibold text-ivory">Decision Journal</div>
+          <div className="text-xs text-muted">Track decision reflections & outcomes</div>
+        </button>
+
+        <button
+          onClick={() => navigate('/app/decisions')}
+          className="card hover:border-accent/40 p-4 text-left space-y-2 group transition-all"
+        >
+          <FolderKanban className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+          <div className="font-heading text-sm font-semibold text-ivory">My Decisions</div>
+          <div className="text-xs text-muted">Browse saved decisions & compare</div>
+        </button>
+      </div>
+
+      {/* Real Activity & History */}
+      <div className="space-y-4">
+        <h3 className="font-heading text-lg font-semibold text-ivory">Recent Decisions</h3>
+        {analyses.length === 0 ? (
+          <div className="card p-6 text-center space-y-3">
+            <p className="text-sm text-ivory font-medium">No real decisions saved yet</p>
+            <p className="text-xs text-muted max-w-md mx-auto">
+              Start your first decision analysis above or try the interactive 60-second demo to explore full AI insights.
+            </p>
+            <div className="pt-2 flex justify-center gap-3 flex-wrap">
+              <button onClick={() => navigate('/app/new-analysis')} className="btn-primary text-xs">
+                Start My First Analysis
+              </button>
+              <button onClick={handleOpenDemo} className="btn-ghost text-xs">
+                Explore Demo Analysis
+              </button>
+            </div>
+          </div>
+        ) : (
           <div className="space-y-3">
-            {recentAnalyses.map((a) => (
+            {analyses.slice(0, 5).map((a) => (
               <div
                 key={a.id}
-                className="flex items-center gap-4 p-4 rounded-xl border border-white/06 bg-card/50 hover:border-accent/20 transition-colors cursor-pointer"
                 onClick={() => navigate(`/app/analysis/${a.id}`)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && navigate(`/app/analysis/${a.id}`)}
+                className="card p-4 hover:border-accent/40 cursor-pointer flex items-center justify-between transition-colors"
               >
-                <div className="eclipse-sm shrink-0" style={{ width: '20px', height: '20px' }} aria-hidden="true" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-ivory truncate">{a.title}</p>
+                <div>
+                  <h4 className="font-heading text-sm font-semibold text-ivory">{a.title}</h4>
                   <p className="text-xs text-muted mt-0.5">
-                    {new Date(a.createdAt).toLocaleDateString()} • {a.result.blindSpots.length} blind spots
+                    Analyzed on {new Date(a.createdAt).toLocaleDateString()} · {a.result.blindSpots.length} Blind Spots Found
                   </p>
                 </div>
-                <span className={`chip-${a.result.blindSpots[0]?.severity.toLowerCase() ?? 'low'}`}>
-                  {a.result.blindSpots.filter(b => b.severity === 'High').length > 0 ? 'High risk' : 'Analyzed'}
-                </span>
+                <ArrowRight className="w-4 h-4 text-muted" />
               </div>
             ))}
           </div>
-        </section>
-      ) : (
-        <EmptyState
-          title="No analyses yet"
-          description="Start by analyzing a decision you're working through. The AI will surface what you may have missed."
-          action={
-            <button onClick={() => navigate('/app/new')} className="btn-primary">
-              ✦ Analyze My First Decision
-            </button>
-          }
-        />
-      )}
-
-      {/* Thinking insights — only when enough data */}
-      {analyses.length >= 3 && (
-        <section className="p-5 rounded-xl border border-white/06 bg-card/40">
-          <div className="label-xs mb-3">Thinking Insights</div>
-          <p className="text-sm text-ivory mb-2">Patterns from your {analyses.length} analyses:</p>
-          <ul className="space-y-2">
-            {(() => {
-              const categories = analyses.flatMap(a => a.result.blindSpots.map(b => b.category));
-              const categoryCounts = categories.reduce((acc, c) => ({ ...acc, [c]: (acc[c] ?? 0) + 1 }), {} as Record<string, number>);
-              const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
-              return [
-                topCategory && (
-                  <li key="top" className="text-sm text-muted">
-                    Your most frequent blind spot category is{' '}
-                    <span className="text-accent font-medium">{topCategory[0]}</span> ({topCategory[1]} occurrences).
-                  </li>
-                ),
-                <li key="avg" className="text-sm text-muted">
-                  On average, you have <span className="text-ivory font-medium">{avgBlindSpots} blind spots</span> per analysis.
-                </li>,
-              ];
-            })()}
-          </ul>
-        </section>
-      )}
+        )}
+      </div>
     </div>
   );
 }

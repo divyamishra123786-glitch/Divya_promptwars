@@ -24,16 +24,21 @@ export default function App() {
         <Route path="/app" element={<AppLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="overview" element={<OverviewPage />} />
-          <Route path="new" element={<NewAnalysisPage />} />
+          <Route path="new-analysis" element={<NewAnalysisPage />} />
           <Route path="analysis/:id" element={<AnalysisResultsPage />} />
           <Route path="decisions" element={<MyDecisionsPage />} />
           <Route path="compare" element={<CompareAnalysesPage />} />
-          <Route path="perspectives" element={<PerspectiveLabPage />} />
-          <Route path="simulator" element={<SimulatorPage />} />
+          <Route path="perspective-lab" element={<PerspectiveLabPage />} />
+          <Route path="what-if" element={<SimulatorPage />} />
           <Route path="challenge" element={<ChallengePage />} />
           <Route path="journal" element={<JournalPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="about" element={<AboutPage />} />
+
+          {/* Legacy route aliases for backward compatibility */}
+          <Route path="new" element={<Navigate to="/app/new-analysis" replace />} />
+          <Route path="perspectives" element={<Navigate to="/app/perspective-lab" replace />} />
+          <Route path="simulator" element={<Navigate to="/app/what-if" replace />} />
         </Route>
 
         {/* Fallback */}

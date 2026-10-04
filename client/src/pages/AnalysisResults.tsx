@@ -1,9 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Download,
+  Eye,
+  Layers,
+  ShieldAlert,
+  Users,
+  GitBranch,
+  HelpCircle,
+  Sparkles,
+} from 'lucide-react';
 import { LocalStorageProvider } from '../services/storage';
-import type { SavedAnalysis, RiskItem, Likelihood, Impact } from '../types';
-import { SeverityChip, DemoModeBanner, ErrorBanner, EmptyState, ExpandablePanel } from '../components/ui';
+import type { SavedAnalysis, RiskItem, Likelihood, Impact, BlindSpot } from '../types';
+import { DEMO_SAVED_ANALYSIS } from '../services/demoData';
+import { SeverityChip, DemoModeBanner, ErrorBanner, EmptyState } from '../components/ui';
 import { exportAnalysisPDF } from '../services/pdf';
 
 const analysisStore = new LocalStorageProvider<SavedAnalysis>('analyses');
@@ -21,23 +31,27 @@ function RiskMatrix({ risks }: { risks: RiskItem[] }) {
     const l = LIKELIHOOD_ORDER[likelihood];
     const i = IMPACT_ORDER[impact];
     const score = l + i;
-    if (score >= 3) return 'bg-critical/15 border-critical/25';
-    if (score >= 2) return 'bg-warning/15 border-warning/25';
-    return 'bg-sage/10 border-sage/15';
+    if (score >= 3) return 'bg-critical/15 border-critical/30';
+    if (score >= 2) return 'bg-warning/15 border-warning/30';
+    return 'bg-sage/10 border-sage/20';
   };
 
   return (
-    <div role="img" aria-label="Risk matrix showing likelihood vs impact">
-      <p className="label-xs mb-1">AI-estimated, not statistical</p>
-      <div className="mt-4">
-        {/* Y-axis label */}
+    <div role="img" aria-label="Risk matrix showing likelihood vs impact" className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="label-xs text-muted">Qualitative 3x3 Grid (Impact x Likelihood)</p>
+        <span className="text-[11px] px-2 py-0.5 rounded bg-white/05 text-muted border border-white/10">
+          AI-estimated, not statistical
+        </span>
+      </div>
+
+      <div className="mt-2">
         <div className="flex gap-2">
-          <div className="flex flex-col justify-around text-center w-16 shrink-0">
+          <div className="flex flex-col justify-around text-center w-16 shrink-0 text-xs font-mono text-muted">
             {['High', 'Medium', 'Low'].map((l) => (
-              <div key={l} className="label-xs py-2">{l}</div>
+              <div key={l} className="py-3 font-semibold">{l}</div>
             ))}
           </div>
-          {/* Grid */}
           <div className="flex-1">
             {(['High', 'Medium', 'Low'] as Likelihood[]).map((likelihood) => (
               <div key={likelihood} className="flex gap-2 mb-2">
@@ -46,14 +60,16 @@ function RiskMatrix({ risks }: { risks: RiskItem[] }) {
                   return (
                     <div
                       key={impact}
-                      className={`flex-1 min-h-14 rounded-lg border p-2 ${cellColor(likelihood, impact)} flex flex-wrap gap-1 items-start content-start`}
+                      className={`flex-1 min-h-16 rounded-xl border p-2 ${cellColor(
+                        likelihood,
+                        impact
+                      )} flex flex-wrap gap-1.5 items-start content-start transition-colors`}
                     >
                       {dots.map((r) => (
                         <span
                           key={r.id}
-                          className="w-2 h-2 rounded-full bg-accent"
-                          title={r.risk}
-                          aria-label={r.risk}
+                          className="w-3 h-3 rounded-full bg-accent shadow-glow"
+                          title={`${r.risk} (${r.category})`}
                         />
                       ))}
                     </div>
@@ -61,33 +77,32 @@ function RiskMatrix({ risks }: { risks: RiskItem[] }) {
                 })}
               </div>
             ))}
-            {/* X-axis */}
             <div className="flex gap-2 mt-1">
               {levels.map((l) => (
-                <div key={l} className="flex-1 text-center label-xs">{l}</div>
+                <div key={l} className="flex-1 text-center label-xs font-mono text-muted font-semibold">{l}</div>
               ))}
             </div>
-            <p className="text-center label-xs mt-1">← Impact →</p>
+            <p className="text-center label-xs text-muted mt-2 font-mono uppercase tracking-wider">← Impact →</p>
           </div>
         </div>
-        <p className="text-center label-xs mt-1 rotate-90 absolute -left-8 top-1/2 -translate-y-1/2 hidden md:block pointer-events-none" aria-hidden="true">Likelihood</p>
       </div>
 
-      {/* Legend */}
-      <div className="mt-4 space-y-1">
+      <div className="mt-4 space-y-2">
         {risks.map((r) => (
-          <div key={r.id} className="flex items-center gap-2 text-xs text-muted">
-            <span className="w-2 h-2 rounded-full bg-accent shrink-0" aria-hidden="true" />
-            <span className="text-ivory">{r.risk}</span>
-            <span className="text-muted">— {r.likelihood} likelihood / {r.impact} impact</span>
+          <div key={r.id} className="flex items-center justify-between text-xs p-2.5 rounded-lg border border-white/06 bg-white/02">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
+              <span className="text-ivory font-medium">{r.risk}</span>
+            </div>
+            <span className="text-muted font-mono">
+              {r.likelihood} Likelihood / {r.impact} Impact
+            </span>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-const PERSPECTIVES = ['Recruiter', 'Career Mentor', 'Financial Advisor', 'Family Member', 'Future Self'] as const;
 
 export default function AnalysisResultsPage() {
   const { id } = useParams<{ id: string }>();
@@ -98,9 +113,26 @@ export default function AnalysisResultsPage() {
   const [exportError, setExportError] = useState('');
 
   useEffect(() => {
-    if (!id) { setNotFound(true); return; }
+    if (!id) {
+      setNotFound(true);
+      return;
+    }
+
+    if (id === 'demo-internship-6mo') {
+      setAnalysis(DEMO_SAVED_ANALYSIS);
+      return;
+    }
+
     const a = analysisStore.get(id);
-    if (!a) { setNotFound(true); return; }
+    if (!a) {
+      // Fallback to DEMO if requested demo id
+      if (id.includes('demo')) {
+        setAnalysis(DEMO_SAVED_ANALYSIS);
+      } else {
+        setNotFound(true);
+      }
+      return;
+    }
     setAnalysis(a);
   }, [id]);
 
@@ -119,10 +151,10 @@ export default function AnalysisResultsPage() {
 
   if (notFound) {
     return (
-      <div className="p-6">
+      <div className="p-6 max-w-4xl mx-auto">
         <EmptyState
-          title="Analysis not found"
-          description="This analysis may have been deleted or the link is incorrect."
+          title="Analysis Not Found"
+          description="This decision analysis may have been deleted or the link is invalid."
           action={
             <button onClick={() => navigate('/app/decisions')} className="btn-primary">
               View My Decisions
@@ -134,506 +166,174 @@ export default function AnalysisResultsPage() {
   }
 
   if (!analysis) {
-    return <div className="p-6 text-muted">Loading…</div>;
+    return <div className="p-6 text-muted">Loading analysis...</div>;
   }
 
   const { result, title, createdAt, input } = analysis;
-  const highBlindSpots = result.blindSpots.filter(b => b.severity === 'High');
+  const isDemo = result.mode === 'demo' || analysis.id === DEMO_SAVED_ANALYSIS.id;
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-white/06 bg-bg/95 backdrop-blur-md px-6 py-3">
+    <div className="min-h-screen space-y-8 pb-12">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-20 border-b border-white/06 bg-bg/90 backdrop-blur-md px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/app/decisions')} className="btn-ghost text-xs">
+            <button onClick={() => navigate('/app/decisions')} className="btn-ghost text-xs flex items-center gap-1">
               ← My Decisions
             </button>
             <span className="text-white/20">|</span>
-            <div className="eclipse-sm" aria-hidden="true" style={{ width: '16px', height: '16px' }} />
-            <span className="font-heading text-sm text-ivory truncate max-w-64">{title}</span>
-            {result.mode === 'demo' && (
-              <span className="chip-medium text-xs">DEMO</span>
-            )}
+            <span className="font-heading text-sm text-ivory font-bold truncate max-w-xs">{title}</span>
+            {isDemo && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">DEMO SAMPLE</span>}
           </div>
-          <div className="flex items-center gap-2">
+
+          <div id="tour-export" className="flex items-center gap-2">
             <button
-              id="export-pdf-btn"
+              onClick={() => navigate('/app/perspective-lab', { state: { analysisId: analysis.id } })}
+              className="btn-ghost text-xs flex items-center gap-1.5"
+            >
+              <Users className="w-3.5 h-3.5 text-accent" /> Perspectives
+            </button>
+            <button
+              onClick={() => navigate('/app/what-if', { state: { analysisId: analysis.id } })}
+              className="btn-ghost text-xs flex items-center gap-1.5"
+            >
+              <GitBranch className="w-3.5 h-3.5 text-accent" /> What-If
+            </button>
+            <button
               onClick={handleExportPDF}
               disabled={exporting}
-              className="btn-ghost text-xs"
+              className="btn-primary text-xs flex items-center gap-1.5 px-3 py-1.5 shadow-md shadow-accent/20"
             >
-              {exporting ? 'Exporting…' : '⤓ Export PDF'}
-            </button>
-            <button
-              id="challenge-btn"
-              onClick={() => navigate('/app/challenge', { state: { analysisId: id } })}
-              className="btn-secondary text-xs py-2"
-            >
-              ◇ Challenge Thinking
-            </button>
-            <button
-              id="simulator-btn"
-              onClick={() => navigate('/app/simulator', { state: { analysisId: id } })}
-              className="btn-secondary text-xs py-2"
-            >
-              ⟳ What-If
+              <Download className="w-3.5 h-3.5" /> {exporting ? 'Exporting...' : 'Export PDF'}
             </button>
           </div>
         </div>
       </div>
 
-      <div id="analysis-content" className="max-w-5xl mx-auto p-6 space-y-8">
+      <div className="p-6 max-w-5xl mx-auto space-y-8">
+        {isDemo && <DemoModeBanner />}
         {exportError && <ErrorBanner message={exportError} />}
 
-        {result.mode === 'demo' && <DemoModeBanner />}
-
-        {/* Editorial headline */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-3"
-        >
-          <div className="label-xs">
-            Analysis · {new Date(createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        {/* Executive Summary Card */}
+        <div className="card space-y-4 border-accent/30 bg-accent/05 p-6">
+          <div className="flex items-center justify-between">
+            <div className="label-xs text-accent font-semibold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Executive Summary
+            </div>
+            <span className="text-xs text-muted font-mono">{new Date(createdAt).toLocaleDateString()}</span>
           </div>
-          <h1 className="font-heading text-4xl md:text-5xl text-ivory leading-tight">
-            {highBlindSpots.length > 0
-              ? `You see ${input.priorities?.split(',')[0]?.trim() ?? 'the benefits'}. Here's what sits just outside the frame.`
-              : `${title} — a wider view.`}
-          </h1>
-        </motion.div>
-
-        {/* Signpost strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { label: 'What you see', content: input.leaningToward ?? input.priorities ?? 'Your stated reasoning', col: 'text-ivory' },
-            { label: 'What you know', content: input.priorities ?? 'Your known priorities', col: 'text-sage' },
-            { label: 'What you miss', content: result.blindSpots.slice(0, 2).map(b => b.title).join(', ') || 'Identified above', col: 'text-accent', highlighted: true },
-            { label: 'What could change everything', content: result.criticalQuestions[0] ?? 'See critical questions below', col: 'text-critical' },
-          ].map((cell) => (
-            <div key={cell.label} className={`signpost-cell ${cell.highlighted ? 'highlighted' : ''}`}>
-              <p className={`label-xs mb-2 ${cell.col}`}>{cell.label}</p>
-              <p className="text-xs text-muted leading-relaxed">{cell.content}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Executive Summary */}
-        <section aria-labelledby="exec-summary">
-          <h2 id="exec-summary" className="font-heading text-xl text-ivory mb-3">Executive Summary</h2>
-          <p className="text-ivory/90 leading-relaxed">{result.executiveSummary}</p>
-        </section>
-
-        {/* Decision DNA */}
-        <section aria-labelledby="decision-dna">
-          <ExpandablePanel
-            title={<span id="decision-dna">Decision DNA</span>}
-            defaultOpen={true}
-            badge={<span className="chip-low text-xs ml-2">Reasoning Pattern</span>}
-          >
-            <div className="pt-4 space-y-4">
-              <div>
-                <p className="label-xs mb-1">Core Goal</p>
-                <p className="text-sm text-ivory">{result.decisionDna.coreGoal}</p>
-              </div>
-              <div>
-                <p className="label-xs mb-1">Reasoning Pattern</p>
-                <p className="text-sm text-ivory italic">{result.decisionDna.reasoningPattern}</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="label-xs mb-2">Stated priorities</p>
-                  <div className="flex flex-wrap gap-2">
-                    {result.decisionDna.statedPriorities.map((p) => (
-                      <span key={p} className="px-2 py-1 rounded text-xs bg-white/05 text-ivory border border-white/08">{p}</span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="label-xs mb-2">Implied priorities</p>
-                  <div className="flex flex-wrap gap-2">
-                    {result.decisionDna.impliedPriorities.map((p) => (
-                      <span key={p} className="px-2 py-1 rounded text-xs bg-accent/08 text-accent border border-accent/15">{p}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ExpandablePanel>
-        </section>
-
-        {/* Blind Spots */}
-        <section aria-labelledby="blind-spots-heading">
-          <h2 id="blind-spots-heading" className="font-heading text-xl text-ivory mb-4">
-            Blind Spots
-            <span className="ml-3 chip-high">{result.blindSpots.length} found</span>
-          </h2>
-          <div className="space-y-4">
-            {result.blindSpots.map((bs, i) => (
-              <motion.div
-                key={bs.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="p-5 rounded-xl border border-white/06 bg-card/50 hover:border-accent/15 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-accent text-sm font-bold">#{i + 1}</span>
-                      <h3 className="font-heading text-base text-ivory">{bs.title}</h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <SeverityChip severity={bs.severity} />
-                      <span className="label-xs">{bs.category}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="label-xs text-muted mb-1">What was noticed</p>
-                    <p className="text-sm text-ivory leading-relaxed">{bs.whatWasNoticed}</p>
-                  </div>
-                  <div>
-                    <p className="label-xs text-muted mb-1">Why it matters</p>
-                    <p className="text-sm text-ivory/80 leading-relaxed">{bs.whyItMatters}</p>
-                  </div>
-                  <div>
-                    <p className="label-xs text-muted mb-1">What is uncertain</p>
-                    <p className="text-sm text-muted italic">{bs.whatIsUncertain}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-sage/08 border border-sage/15">
-                    <p className="label-xs text-sage mb-1">Investigate →</p>
-                    <p className="text-sm text-ivory/90 leading-relaxed">{bs.whatToInvestigate}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* Assumptions */}
-        <section aria-labelledby="assumptions-heading">
-          <ExpandablePanel
-            title={<span id="assumptions-heading">Assumptions</span>}
-            badge={<span className="chip-medium text-xs ml-2">{result.assumptions.length}</span>}
-          >
-            <div className="pt-4 space-y-3">
-              {result.assumptions.map((a) => (
-                <div key={a.id} className="p-4 rounded-lg border border-white/06 bg-card/30">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className="text-sm font-medium text-ivory">{a.assumption}</p>
-                    <SeverityChip severity={a.severity} />
-                  </div>
-                  <p className="text-xs text-muted">Risk if false: {a.risk}</p>
-                </div>
-              ))}
-            </div>
-          </ExpandablePanel>
-        </section>
-
-        {/* Risk Radar */}
-        <section aria-labelledby="risk-radar-heading">
-          <ExpandablePanel
-            title={<span id="risk-radar-heading">Risk Radar</span>}
-            badge={<span className="chip-high text-xs ml-2">{result.riskRadar.length} risks</span>}
-          >
-            <div className="pt-4">
-              <RiskMatrix risks={result.riskRadar} />
-            </div>
-          </ExpandablePanel>
-        </section>
-
-        {/* Conflicting Priorities */}
-        {result.conflictingPriorities.length > 0 && (
-          <section aria-labelledby="conflicts-heading">
-            <ExpandablePanel title={<span id="conflicts-heading">Conflicting Priorities</span>}>
-              <div className="pt-4 space-y-3">
-                {result.conflictingPriorities.map((cp) => (
-                  <div key={cp.id} className="p-4 rounded-lg border border-warning/15 bg-warning/05">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-sm font-medium text-ivory">{cp.factor1}</span>
-                      <span className="text-warning text-xs">⟷</span>
-                      <span className="text-sm font-medium text-ivory">{cp.factor2}</span>
-                    </div>
-                    <p className="text-xs text-muted">{cp.tension}</p>
-                  </div>
-                ))}
-              </div>
-            </ExpandablePanel>
-          </section>
-        )}
-
-        {/* Perspective Switch */}
-        <section aria-labelledby="perspective-heading">
-          <h2 id="perspective-heading" className="font-heading text-xl text-ivory mb-2">Perspective Switch</h2>
-          <p className="text-xs text-muted mb-4 italic">
-            Simulated viewpoint — not professional advice. Each perspective is a fresh AI analysis.
+          <p className="text-sm sm:text-base text-ivory/90 leading-relaxed font-serif italic">
+            "{result.executiveSummary}"
           </p>
-          <PerspectiveSwitcher analysis={analysis} onUpdate={setAnalysis} />
-        </section>
 
-        {/* Missing Information */}
-        {result.missingInformation.length > 0 && (
-          <section aria-labelledby="missing-info-heading">
-            <ExpandablePanel title={<span id="missing-info-heading">Missing Information</span>}>
-              <div className="pt-4">
-                <ul className="space-y-2">
-                  {result.missingInformation.map((info, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-muted">
-                      <span className="text-accent shrink-0 mt-0.5">◦</span>
-                      {info}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </ExpandablePanel>
-          </section>
-        )}
+          <div className="p-3 rounded-lg bg-black/30 border border-white/06 text-xs text-muted flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-warning shrink-0" />
+            <span>Non-prescriptive analysis: BlindSpot AI illuminates hidden risk factors without telling you what to choose.</span>
+          </div>
+        </div>
 
-        {/* Critical Questions */}
-        <section aria-labelledby="questions-heading">
-          <h2 id="questions-heading" className="font-heading text-xl text-ivory mb-4">Critical Questions</h2>
-          <div className="space-y-3">
-            {result.criticalQuestions.map((q, i) => (
-              <div key={i} className="flex gap-4 p-4 rounded-xl border border-white/06 bg-card/40 hover:border-accent/15 transition-colors">
-                <span className="font-heading text-2xl font-bold text-accent/30 shrink-0 w-8 text-center">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <p className="text-sm text-ivory leading-relaxed self-center">{q}</p>
+        {/* 4 Signposts Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="card p-4 space-y-1 bg-white/02">
+            <span className="label-xs text-muted">What You See</span>
+            <p className="text-xs text-ivory font-medium truncate">{input.leaningToward || input.title}</p>
+          </div>
+          <div className="card p-4 space-y-1 bg-white/02">
+            <span className="label-xs text-muted">Stated Priorities</span>
+            <p className="text-xs text-ivory font-medium truncate">{input.priorities}</p>
+          </div>
+          <div className="card p-4 space-y-1 border-amber-500/30 bg-amber-500/05">
+            <span className="label-xs text-warning">What You Miss</span>
+            <p className="text-xs text-amber-200 font-medium">{result.blindSpots.length} Blind Spots Found</p>
+          </div>
+          <div className="card p-4 space-y-1 border-accent/30 bg-accent/05">
+            <span className="label-xs text-accent">What Could Change</span>
+            <p className="text-xs text-accent font-medium">{result.riskRadar.length} Risk Factors Mapped</p>
+          </div>
+        </div>
+
+        {/* Decision DNA Section */}
+        <div className="card space-y-4">
+          <h2 className="font-heading text-lg font-bold text-ivory flex items-center gap-2">
+            <span className="text-accent">🧬</span> Decision DNA Profile
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="p-3 rounded-lg bg-white/03 border border-white/06 space-y-1">
+              <span className="label-xs text-muted">Core Goal</span>
+              <p className="text-ivory font-medium">{result.decisionDna.coreGoal}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-white/03 border border-white/06 space-y-1">
+              <span className="label-xs text-muted">Reasoning Pattern Detected</span>
+              <p className="text-ivory font-medium">{result.decisionDna.reasoningPattern}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Blind Spots Section */}
+        <div id="tour-blind-spots" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-xl font-bold text-ivory flex items-center gap-2">
+              <Eye className="w-5 h-5 text-accent" /> Blind Spots ({result.blindSpots.length})
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {result.blindSpots.map((bs: BlindSpot) => (
+              <div key={bs.id} className="card p-5 space-y-3 border-white/10 hover:border-accent/40 transition-colors">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading text-base font-bold text-ivory">{bs.title}</h3>
+                  <SeverityChip severity={bs.severity} />
+                </div>
+                <div className="space-y-2 text-xs">
+                  <p className="text-ivory/90"><strong>What was noticed:</strong> {bs.whatWasNoticed}</p>
+                  <p className="text-muted"><strong>Why it matters:</strong> {bs.whyItMatters}</p>
+                  <p className="text-amber-200/90"><strong>What is uncertain:</strong> {bs.whatIsUncertain}</p>
+                  <div className="p-2.5 rounded bg-white/03 border border-white/06 text-accent">
+                    <strong>To investigate:</strong> {bs.whatToInvestigate}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-        </section>
-
-        {/* Actions */}
-        <div className="flex flex-wrap gap-3 pt-4 border-t border-white/06">
-          <button
-            id="results-challenge-btn"
-            onClick={() => navigate('/app/challenge', { state: { analysisId: id } })}
-            className="btn-secondary"
-          >
-            ◇ Challenge Your Thinking
-          </button>
-          <button
-            id="results-simulator-btn"
-            onClick={() => navigate('/app/simulator', { state: { analysisId: id } })}
-            className="btn-secondary"
-          >
-            ⟳ What-If Simulator
-          </button>
-          <button
-            id="results-journal-btn"
-            onClick={() => navigate('/app/journal', { state: { linkedAnalysisId: id, linkedAnalysisTitle: title } })}
-            className="btn-secondary"
-          >
-            ◻ Add Journal Entry
-          </button>
-          <button
-            id="results-export-btn"
-            onClick={handleExportPDF}
-            disabled={exporting}
-            className="btn-ghost"
-          >
-            {exporting ? 'Exporting…' : '⤓ Export PDF'}
-          </button>
         </div>
-      </div>
-    </div>
-  );
-}
 
-// Perspective Switcher component
-function PerspectiveSwitcher({ analysis, onUpdate }: { analysis: SavedAnalysis; onUpdate: (a: SavedAnalysis) => void }) {
-  const [selected, setSelected] = useState<typeof PERSPECTIVES[number]>('Recruiter');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const cached = analysis.perspectives?.[selected];
-
-  const loadPerspective = async () => {
-    if (cached) return;
-    setLoading(true);
-    setError('');
-    try {
-      const { api } = await import('../services/api');
-      const result = await api.perspective({
-        analysisId: analysis.id,
-        perspective: selected,
-        decisionContext: {
-          title: analysis.input.title,
-          decision: analysis.input.decision,
-          situation: analysis.input.situation,
-          options: analysis.input.options,
-          priorities: analysis.input.priorities,
-          leaningToward: analysis.input.leaningToward,
-        },
-      });
-
-      const updated: SavedAnalysis = {
-        ...analysis,
-        perspectives: {
-          ...analysis.perspectives,
-          [selected]: result,
-        },
-        updatedAt: new Date().toISOString(),
-      };
-
-      const { LocalStorageProvider } = await import('../services/storage');
-      const store = new LocalStorageProvider<SavedAnalysis>('analyses');
-      store.save(updated);
-      onUpdate(updated);
-    } catch (err) {
-      setError((err as Error).message ?? 'Failed to load perspective');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelect = (p: typeof PERSPECTIVES[number]) => {
-    setSelected(p);
-    setError('');
-  };
-
-  useEffect(() => {
-    if (!cached && !loading) {
-      // Auto-load if not cached
-      loadPerspective();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected]);
-
-  return (
-    <div className="space-y-4">
-      {/* Pill bar */}
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Perspectives">
-        {PERSPECTIVES.map((p) => (
-          <button
-            key={p}
-            role="tab"
-            aria-selected={selected === p}
-            id={`perspective-tab-${p.replace(/\s+/g, '-').toLowerCase()}`}
-            onClick={() => handleSelect(p)}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowRight') {
-                const idx = PERSPECTIVES.indexOf(p);
-                handleSelect(PERSPECTIVES[(idx + 1) % PERSPECTIVES.length]);
-              }
-              if (e.key === 'ArrowLeft') {
-                const idx = PERSPECTIVES.indexOf(p);
-                handleSelect(PERSPECTIVES[(idx - 1 + PERSPECTIVES.length) % PERSPECTIVES.length]);
-              }
-            }}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-              selected === p
-                ? 'bg-accent text-bg'
-                : 'bg-card border border-white/08 text-muted hover:text-ivory hover:border-accent/30'
-            }`}
-          >
-            {p}
-            {analysis.perspectives?.[p] && (
-              <span className="ml-1 text-xs opacity-60">✓</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {error && <ErrorBanner message={error} onRetry={loadPerspective} />}
-
-      {/* Content */}
-      <div className="p-5 rounded-xl border border-white/08 bg-card/50 min-h-32">
-        {loading ? (
-          <div className="flex items-center gap-3 py-4">
-            <div className="eclipse-sm animate-pulse" aria-hidden="true" />
-            <p className="text-sm text-muted" aria-live="polite">
-              Generating {selected} perspective…
-            </p>
-          </div>
-        ) : cached ? (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selected}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-4"
-            >
-              {cached.notRelevant ? (
-                <div className="p-3 rounded bg-white/03 border border-white/08">
-                  <p className="text-sm text-muted italic">
-                    This perspective ({selected}) may not be highly relevant to this specific decision:
-                    {cached.notRelevantReason && ` ${cached.notRelevantReason}`}
-                  </p>
+        {/* Unstated Assumptions Section */}
+        <div id="tour-assumptions" className="card space-y-4 border-amber-500/30">
+          <h2 className="font-heading text-lg font-bold text-warning flex items-center gap-2">
+            <Layers className="w-5 h-5" /> Unstated Assumptions Scanner
+          </h2>
+          <div className="space-y-3">
+            {result.assumptions.map((as) => (
+              <div key={as.id} className="p-3.5 rounded-xl border border-white/06 bg-white/02 space-y-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-heading text-sm text-ivory font-bold">{as.assumption}</span>
+                  <SeverityChip severity={as.severity} />
                 </div>
-              ) : (
-                <>
-                  <p className="text-sm text-ivory leading-relaxed">{cached.lensSummary}</p>
-                  {cached.considerations.length > 0 && (
-                    <div>
-                      <p className="label-xs mb-2">Key considerations</p>
-                      <ul className="space-y-1">
-                        {cached.considerations.map((c, i) => (
-                          <li key={i} className="text-sm text-muted flex items-start gap-2">
-                            <span className="text-accent shrink-0 mt-0.5">◦</span>
-                            {c}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {cached.overlookedFactors.length > 0 && (
-                    <div>
-                      <p className="label-xs mb-2">Overlooked factors</p>
-                      <ul className="space-y-1">
-                        {cached.overlookedFactors.map((f, i) => (
-                          <li key={i} className="text-sm text-muted flex items-start gap-2">
-                            <span className="text-warning shrink-0 mt-0.5">◦</span>
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {cached.concerns.length > 0 && (
-                    <div>
-                      <p className="label-xs mb-2">Concerns</p>
-                      <ul className="space-y-1">
-                        {cached.concerns.map((c, i) => (
-                          <li key={i} className="text-sm text-critical/80 flex items-start gap-2">
-                            <span className="shrink-0 mt-0.5">◦</span>
-                            {c}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {cached.criticalQuestions.length > 0 && (
-                    <div>
-                      <p className="label-xs mb-2">Critical questions from this perspective</p>
-                      <ul className="space-y-1">
-                        {cached.criticalQuestions.map((q, i) => (
-                          <li key={i} className="text-sm text-ivory italic flex items-start gap-2">
-                            <span className="text-accent shrink-0 mt-0.5">{i + 1}.</span>
-                            {q}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
-              <p className="text-xs text-muted pt-2 border-t border-white/05 italic">
-                Simulated viewpoint — not professional advice
-              </p>
-            </motion.div>
-          </AnimatePresence>
-        ) : (
-          <div className="text-center py-4">
-            <button onClick={loadPerspective} className="btn-secondary text-sm">
-              Load {selected} Perspective
-            </button>
+                <p className="text-muted"><strong>Risk if invalidated:</strong> {as.risk}</p>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* Risk Radar Matrix Section */}
+        <div id="tour-risk-radar" className="card space-y-4">
+          <h2 className="font-heading text-lg font-bold text-ivory flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-accent" /> Qualitative Risk Radar Matrix
+          </h2>
+          <RiskMatrix risks={result.riskRadar} />
+        </div>
+
+        {/* Critical Questions Section */}
+        <div className="card space-y-4 border-accent/30 bg-accent/05">
+          <h2 className="font-heading text-lg font-bold text-accent flex items-center gap-2">
+            <HelpCircle className="w-5 h-5" /> 5 Critical Questions to Ask Before Deciding
+          </h2>
+          <ol className="space-y-2 text-xs text-ivory/90 list-decimal list-inside">
+            {result.criticalQuestions.slice(0, 5).map((q, idx) => (
+              <li key={idx} className="p-2 rounded bg-black/30 border border-white/06 font-medium">{q}</li>
+            ))}
+          </ol>
+        </div>
       </div>
     </div>
   );
