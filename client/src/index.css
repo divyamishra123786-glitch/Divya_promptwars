@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #101214;
+    color: #F5F1EB;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  :focus-visible {
+    outline: 2px solid #F2A36D;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: rgba(242, 163, 109, 0.3);
+    color: #F5F1EB;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Hairline borders */
+  .border-hairline {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Glass card */
+  .glass-card {
+    background: rgba(34, 39, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Eclipse motif */
+  .eclipse {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #101214;
+    box-shadow: 0 0 0 3px rgba(242, 163, 109, 0.6),
+                0 0 30px 8px rgba(242, 163, 109, 0.25),
+                0 0 60px 16px rgba(242, 163, 109, 0.12);
+    animation: eclipse-pulse 3s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .eclipse-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #101214;
+    box-shadow: 0 0 0 2px rgba(242, 163, 109, 0.5),
+                0 0 12px 4px rgba(242, 163, 109, 0.2);
+    animation: eclipse-pulse 3s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  .eclipse-lg {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: #101214;
+    box-shadow: 0 0 0 4px rgba(242, 163, 109, 0.5),
+                0 0 60px 20px rgba(242, 163, 109, 0.2),
+                0 0 120px 40px rgba(242, 163, 109, 0.1);
+    animation: eclipse-pulse 3s ease-in-out infinite;
+  }
+
+  /* Severity chips */
+  .chip-high {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide;
+    background: rgba(219, 129, 120, 0.15);
+    color: #DB8178;
+    border: 1px solid rgba(219, 129, 120, 0.3);
+  }
+
+  .chip-medium {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide;
+    background: rgba(230, 184, 108, 0.15);
+    color: #E6B86C;
+    border: 1px solid rgba(230, 184, 108, 0.3);
+  }
+
+  .chip-low {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide;
+    background: rgba(165, 181, 161, 0.15);
+    color: #A5B5A1;
+    border: 1px solid rgba(165, 181, 161, 0.3);
+  }
+
+  /* Label style */
+  .label-xs {
+    @apply text-xs font-medium uppercase tracking-widest;
+    color: #93999C;
+  }
+
+  /* Btn styles */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200;
+    background: #F2A36D;
+    color: #101214;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover {
+    background: #f0b282;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(242, 163, 109, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200;
+    background: rgba(255, 255, 255, 0.05);
+    color: #D8D0C2;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(242, 163, 109, 0.3);
+    color: #F5F1EB;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200;
+    color: #93999C;
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #D8D0C2;
+  }
+
+  /* Input styles */
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg text-sm transition-all duration-200;
+    background: rgba(34, 39, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #F5F1EB;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .input-field::placeholder {
+    color: #93999C;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: rgba(242, 163, 109, 0.5);
+    box-shadow: 0 0 0 3px rgba(242, 163, 109, 0.1);
+  }
+
+  /* Skeleton */
+  .skeleton {
+    @apply rounded animate-pulse;
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.05) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Signpost cell */
+  .signpost-cell {
+    @apply p-4 rounded-lg border transition-all duration-200;
+    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(34, 39, 42, 0.5);
+  }
+
+  .signpost-cell.highlighted {
+    border-color: rgba(242, 163, 109, 0.4);
+    background: rgba(242, 163, 109, 0.06);
+  }
+}
+
+@keyframes eclipse-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(242,163,109,0.6), 0 0 30px 8px rgba(242,163,109,0.25), 0 0 60px 16px rgba(242,163,109,0.12); }
+  50% { box-shadow: 0 0 0 4px rgba(242,163,109,0.7), 0 0 50px 16px rgba(242,163,109,0.35), 0 0 90px 30px rgba(242,163,109,0.18); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #191D20;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #F2A36D;
+  color: #101214;
+  padding: 8px 16px;
+  font-weight: 600;
+  z-index: 100;
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 0;
+}
