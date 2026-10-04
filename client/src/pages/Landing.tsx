@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
@@ -114,52 +115,105 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24 px-6 relative overflow-hidden flex flex-col items-center text-center">
-        <div className="max-w-4xl mx-auto space-y-8 relative z-10 flex flex-col items-center">
-          <Eclipse size="hero" className="my-2" />
+      <section className="relative overflow-hidden px-6 pt-10 pb-14 md:pt-14 md:pb-20">
+        {/* Ambient background nebula */}
+        <div
+          className="absolute pointer-events-none"
+          aria-hidden="true"
+          style={{
+            right: '-5%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 'min(520px, 55vw)',
+            height: 'min(520px, 55vw)',
+            background:
+              'radial-gradient(ellipse at center, rgba(242,163,109,0.07) 0%, rgba(242,163,109,0.03) 45%, transparent 70%)',
+            borderRadius: '50%',
+          }}
+        />
 
-          <div className="space-y-4 max-w-3xl">
-            <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-ivory leading-tight">
-              You're seeing the decision. <br />
-              <span className="text-accent italic font-serif">But are you seeing everything?</span>
-            </h1>
-            <p className="text-muted text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              An intelligent thinking companion that reveals hidden assumptions, overlooked risks, and perspectives you might have missed — without ever deciding for you.
-            </p>
-          </div>
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/*
+           * Two-column CSS Grid — text always lives in its own column
+           * and can never bleed into the eclipse column.
+           * On mobile (<md): single column, eclipse above text.
+           */}
+          <div
+            className="grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-10 md:gap-14 lg:gap-20"
+          >
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-            <button
-              onClick={() => navigate('/app/new-analysis')}
-              className="btn-primary text-base px-8 py-3.5 shadow-xl shadow-accent/20 flex items-center gap-2"
+            {/* Left: copy block — fills available grid column */}
+            <motion.div
+              className="flex flex-col items-start text-left space-y-6 min-w-0"
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
             >
-              Analyze My Decision <ArrowRight className="w-5 h-5" />
-            </button>
+              {/* Eye-brow label */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs font-semibold tracking-widest uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                Decision Intelligence
+              </div>
 
-            <button
-              onClick={() => navigate('/app/analysis/demo-internship-6mo')}
-              className="btn-ghost text-base px-6 py-3.5 flex items-center gap-2 border border-white/10"
-            >
-              <Sparkles className="w-5 h-5 text-accent" /> Explore Interactive Demo
-            </button>
-          </div>
+              <h1 className="font-heading text-4xl sm:text-5xl md:text-[2.75rem] lg:text-[3.25rem] font-bold tracking-tight text-ivory leading-[1.12]">
+                You're seeing the decision.{' '}
+                <span className="text-accent italic font-serif">
+                  But are you seeing everything?
+                </span>
+              </h1>
 
-          {/* Proof Chips Under Hero */}
-          <div className="pt-6 flex flex-wrap justify-center gap-2 sm:gap-3 max-w-3xl">
-            {PROOF_CHIPS.map((chip, idx) => {
-              const Icon = chip.icon;
-              return (
-                <div
-                  key={idx}
-                  title={chip.tooltip}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/04 border border-white/08 text-ivory/90 hover:border-accent/40 transition-colors"
+              <p className="text-muted text-base sm:text-lg leading-relaxed max-w-xl">
+                An intelligent thinking companion that reveals hidden assumptions, overlooked risks and perspectives you might have missed — without ever deciding for you.
+              </p>
+
+              {/* CTA row */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-1">
+                <button
+                  onClick={() => navigate('/app/new-analysis')}
+                  className="btn-primary text-sm sm:text-base px-7 py-3 shadow-xl shadow-accent/20 flex items-center gap-2"
                 >
-                  <Icon className="w-3.5 h-3.5 text-accent" />
-                  <span>{chip.label}</span>
-                </div>
-              );
-            })}
+                  Analyze My Decision <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => navigate('/app/analysis/demo-internship-6mo')}
+                  className="btn-ghost text-sm sm:text-base px-5 py-3 flex items-center gap-2 border border-white/10"
+                >
+                  <Sparkles className="w-4 h-4 text-accent" /> Explore Demo
+                </button>
+              </div>
+
+              {/* Proof chips */}
+              <div className="flex flex-wrap gap-2">
+                {PROOF_CHIPS.map((chip, idx) => {
+                  const Icon = chip.icon;
+                  return (
+                    <div
+                      key={idx}
+                      title={chip.tooltip}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/04 border border-white/08 text-ivory/80 hover:border-accent/40 transition-colors cursor-default"
+                    >
+                      <Icon className="w-3.5 h-3.5 text-accent" />
+                      <span>{chip.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            {/*
+             * Right: Eclipse column — auto-sized by the grid.
+             * The motion.div is explicitly square so the Eclipse
+             * component always renders in a 1:1 container.
+             */}
+            <motion.div
+              className="flex items-center justify-center order-first md:order-last"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              style={{ flexShrink: 0 }}
+            >
+              <Eclipse size="hero" />
+            </motion.div>
           </div>
         </div>
       </section>
